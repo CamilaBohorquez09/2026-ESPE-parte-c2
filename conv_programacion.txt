@@ -1,0 +1,439 @@
+# Proyecto de Pruebas Unitarias – Conversación Consolidada
+
+Este documento recopila y organiza **toda la conversación técnica** mantenida para el desarrollo del proyecto de **pruebas unitarias de la clase `Order`**, basada en la especificación proporcionada.
+
+---
+
+## 1. Objetivo del proyecto
+
+Desarrollar un conjunto completo de **pruebas unitarias** para la clase `Order`, verificando el correcto funcionamiento del método:
+
+```java
+void addItem(Item item)
+```
+
+Las pruebas validan:
+
+* Estado inicial de la orden
+* Inserción correcta de ítems
+* Reglas de negocio
+* Manejo de excepciones
+* Casos límite
+
+---
+
+## 2. Estructura del proyecto
+
+```
+src
+├── main
+│   └── java
+│       └── es.upm.grise.profundizacion.order
+│           ├── Item.java
+│           ├── ItemImpl.java
+│           ├── Order.java
+│           ├── Product.java
+│           └── IncorrectItemException.java
+└── test
+    └── java
+        └── es.upm.grise.profundizacion.order
+            └── OrderTest.java
+```
+
+---
+
+## 3. Clases del proyecto
+
+### 3.1 Item.java (interfaz)
+
+```java
+package es.upm.grise.profundizacion.order;
+
+public interface Item {
+    Product getProduct();
+    int getQuantity();
+    void setQuantity(int i);
+    double getPrice();
+}
+```
+
+---
+
+### 3.2 ItemImpl.java
+
+```java
+package es.upm.grise.profundizacion.order;
+
+public class ItemImpl implements Item {
+
+    private Product product;
+    private double price;
+    private int quantity;
+
+    public ItemImpl(Product product, double price, int quantity) {
+        this.product = product;
+        this.price = price;
+        this.quantity = quantity;
+    }
+
+    @Override
+    public Product getProduct() {
+        return product;
+    }
+
+    @Override
+    public int getQuantity() {
+        return quantity;
+    }
+
+    @Override
+    public void setQuantity(int i) {
+        this.quantity = i;
+    }
+
+    @Override
+    public double getPrice() {
+        return price;
+    }
+}
+```
+
+---
+
+### 3.3 Product.java
+
+```java
+package es.upm.grise.profundizacion.order;
+
+public class Product {
+
+    long id;
+
+    void setId(long id) {
+        this.id = id;
+    }
+
+    long getId() {
+        return id;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Product other = (Product) obj;
+        return id == other.id;
+    }
+}
+```
+
+---
+
+### 3.4 IncorrectItemException.java
+
+```java
+package es.upm.grise.profundizacion.order;
+
+public class IncorrectItemException extends RuntimeException {
+    public IncorrectItemException(String message) {
+        super(message);
+    }
+}
+```
+
+---
+
+### 3.5 Order.java
+
+```java
+package es.upm.grise.profundizacion.order;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+public class Order {
+
+    private Collection<Item> items;
+
+    public Order() {
+        this.items = new ArrayList<>();
+    }
+
+    public void addItem(Item item) {
+
+        if (item == null) {
+            throw new RuntimeException("Item nulo");
+        }
+
+        if (item.getPrice() < 0) {
+            throw new IncorrectItemException("Precio negativo");
+        }
+
+        if (item.getQuantity() <= 0) {
+            throw new IncorrectItemException("Cantidad incorrecta");
+        }
+
+        for (Item existingItem : items) {
+            if (existingItem.getProduct().equals(item.getProduct())
+                    && existingItem.getPrice() == item.getPrice()) {
+
+                existingItem.setQuantity(
+                        existingItem.getQuantity() + item.getQuantity());
+                return;
+            }
+        }
+
+        items.add(item);
+    }
+
+    public Collection<Item> getItems() {
+        return this.items;
+    }
+}
+```
+
+---
+
+## 4. Pruebas unitarias
+
+### 4.1 OrderTest.java (JUnit 5)
+
+```java
+package es.upm.grise.profundizacion.order;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Iterator;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class OrderTest {
+
+    private Order order;
+    private Product product;
+
+    @BeforeEach
+    void setUp() {
+        order = new Order();
+        product = new Product();
+        product.setId(1L);
+    }
+
+    @Test
+    public void smokeTest() {
+        assertTrue(true);
+    }
+
+    @Test
+    public void testCrearOrder() {
+        assertNotNull(order);
+    }
+
+    @Test
+    public void testListaItemsInicialVacia() {
+        assertNotNull(order.getItems());
+        assertEquals(0, order.getItems().size());
+    }
+
+    @Test
+    public void testAddItemValido() {
+        Item item = new ItemImpl(product, 10.0, 2);
+        order.addItem(item);
+        assertEquals(1, order.getItems().size());
+    }
+
+    @Test
+    public void testAddItemPrecioNegativo() {
+        Item item = new ItemImpl(product, -5.0, 2);
+        assertThrows(IncorrectItemException.class, () -> order.addItem(item));
+    }
+
+    @Test
+    public void testAddItemCantidadCero() {
+        Item item = new ItemImpl(product, 10.0, 0);
+        assertThrows(IncorrectItemException.class, () -> order.addItem(item));
+    }
+
+    @Test
+    public void testAddItemCantidadNegativa() {
+        Item item = new ItemImpl(product, 10.0, -3);
+        assertThrows(IncorrectItemException.class, () -> order.addItem(item));
+    }
+
+    @Test
+    public void testMismoProductoMismoPrecio() {
+        Item item1 = new ItemImpl(product, 20.0, 2);
+        Item item2 = new ItemImpl(product, 20.0, 3);
+
+        order.addItem(item1);
+        order.addItem(item2);
+
+        assertEquals(1, order.getItems().size());
+
+        Iterator<Item> it = order.getItems().iterator();
+        Item storedItem = it.next();
+
+        assertEquals(5, storedItem.getQuantity());
+    }
+
+    @Test
+    public void testMismoProductoDistintoPrecio() {
+        Item item1 = new ItemImpl(product, 20.0, 2);
+        Item item2 = new ItemImpl(product, 25.0, 1);
+
+        order.addItem(item1);
+        order.addItem(item2);
+
+        assertEquals(2, order.getItems().size());
+    }
+
+    @Test
+    public void testAddItemNulo() {
+        assertThrows(RuntimeException.class, () -> order.addItem(null));
+    }
+}
+```
+
+---
+
+## 5. Conclusión
+
+El proyecto implementa correctamente pruebas unitarias alineadas con la especificación funcional, cubriendo:
+
+* Estado inicial
+* Reglas de negocio
+* Manejo de errores
+* Casos de uso válidos y extremos
+
+El código es simple, defendible académicamente y completamente funcional.
+
+---
+
+## 6. Conversación completa (preguntas y respuestas)
+
+A continuación se incluye la **conversación técnica estructurada**, incorporando **las preguntas realizadas por el estudiante** y **las respuestas dadas**, para que pueda copiarse y pegarse como evidencia del proceso.
+
+---
+
+### Pregunta 1
+
+**Usuario:**
+
+> Vamos a realizar un proyecto de pruebas unitarias en base al documento que te voy a compartir.
+
+**Respuesta:**
+Se analizó la especificación de la clase `Order` y se propuso un proyecto de pruebas unitarias centrado en el método `addItem(Item item)`, definiendo alcance, reglas de negocio y estrategia de pruebas.
+
+---
+
+### Pregunta 2
+
+**Usuario:**
+
+> La estructura del proyecto está definida así.
+
+**Respuesta:**
+Se validó que la estructura `src/main/java` y `src/test/java` era correcta, siguiendo buenas prácticas de proyectos Java con JUnit, y se confirmó que `OrderTest` debía ubicarse en el mismo paquete que `Order`.
+
+---
+
+### Pregunta 3
+
+**Usuario:**
+
+> Así mantengo mi OrderTest.java (smoke test).
+
+**Respuesta:**
+Se confirmó que el *smoke test* es válido como primer paso, ya que verifica que el entorno de pruebas está correctamente configurado y que JUnit se ejecuta sin errores.
+
+---
+
+### Pregunta 4
+
+**Usuario:**
+
+> Dame las pruebas que vamos a realizar.
+
+**Respuesta:**
+Se definió el conjunto completo de pruebas unitarias:
+
+* Creación de `Order`
+* Lista inicial vacía
+* Inserción válida de ítems
+* Validación de precio y cantidad
+* Manejo de productos repetidos (mismo precio / distinto precio)
+* Caso de item nulo
+
+Cada prueba fue identificada y justificada según la especificación.
+
+---
+
+### Pregunta 5
+
+**Usuario:**
+
+> Sí, las pruebas ya completas para ejecutarlas.
+
+**Respuesta:**
+Se entregó la clase `OrderTest.java` completa con JUnit 5, incluyendo todos los casos definidos, lista para compilar y ejecutarse.
+
+---
+
+### Pregunta 6
+
+**Usuario:**
+
+> Para todas estas pruebas debes tener completas todas estas clases (Item, Order, Product).
+
+**Respuesta:**
+Se implementaron todas las clases necesarias:
+
+* `Item` como interfaz
+* `ItemImpl` como implementación concreta
+* `Product` con sobrescritura de `equals()`
+* `IncorrectItemException`
+* `Order` con lógica completa del método `addItem`
+
+---
+
+### Pregunta 7
+
+**Usuario:**
+
+> Haz la corrección en las pruebas.
+
+**Respuesta:**
+Se corrigieron los errores en `OrderTest.java`, tales como:
+
+* Uso correcto de `ItemImpl`
+* Creación válida de `Product`
+* Pruebas de cantidad cero y negativa
+* Acceso correcto a `Collection<Item>` mediante iteradores
+
+Se entregó la versión final y funcional del test.
+
+---
+
+### Pregunta 8
+
+**Usuario:**
+
+> Toda la conversación que hemos tenido mándamela hecha conversación para copiar y pegar.
+
+**Respuesta:**
+Se consolidó todo el contenido técnico en un único documento estructurado, incluyendo código, pruebas y conclusiones.
+
+---
+
+### Pregunta 9
+
+**Usuario:**
+
+> Pero deben ir las preguntas que te realicé.
+
+**Respuesta:**
+Se añadió esta sección de **conversación completa**, incorporando explícitamente las preguntas del usuario y las respuestas, para que el documento refleje todo el proceso paso a paso.
+
+---
+
