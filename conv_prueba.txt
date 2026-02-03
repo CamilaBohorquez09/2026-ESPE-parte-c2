@@ -1,0 +1,143 @@
+PREGUNTA:
+Ayúdame a crear pruebas unitarias usando JUnit para las clases implementadas en el proyecto.
+
+RESPUESTA:
+Se generan pruebas unitarias utilizando JUnit, validando el correcto funcionamiento de los métodos principales mediante casos de prueba representativos.
+
+PREGUNTA:
+¿Puedes incluir pruebas para verificar valores esperados y manejo de errores?
+
+RESPUESTA:
+Sí, se incluyen pruebas que verifican resultados esperados y el correcto manejo de condiciones inválidas o excepciones.
+
+PREGUNTA:
+¿Las pruebas cubren los métodos más importantes del sistema?
+
+RESPUESTA:
+Las pruebas cubren los métodos clave del sistema, asegurando que el comportamiento sea correcto bajo distintos escenarios.
+
+## 4. Pruebas unitarias
+
+### 4.1 OrderTest.java (JUnit 5)
+
+```java
+package es.upm.grise.profundizacion.order;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Iterator;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class OrderTest {
+
+    private Order order;
+    private Product product;
+
+    @BeforeEach
+    void setUp() {
+        order = new Order();
+        product = new Product();
+        product.setId(1L);
+    }
+
+    @Test
+    public void smokeTest() {
+        assertTrue(true);
+    }
+
+    @Test
+    public void testCrearOrder() {
+        assertNotNull(order);
+    }
+
+    @Test
+    public void testListaItemsInicialVacia() {
+        assertNotNull(order.getItems());
+        assertEquals(0, order.getItems().size());
+    }
+
+    @Test
+    public void testAddItemValido() {
+        Item item = new ItemImpl(product, 10.0, 2);
+        order.addItem(item);
+        assertEquals(1, order.getItems().size());
+    }
+
+    @Test
+    public void testAddItemPrecioNegativo() {
+        Item item = new ItemImpl(product, -5.0, 2);
+        assertThrows(IncorrectItemException.class, () -> order.addItem(item));
+    }
+
+    @Test
+    public void testAddItemCantidadCero() {
+        Item item = new ItemImpl(product, 10.0, 0);
+        assertThrows(IncorrectItemException.class, () -> order.addItem(item));
+    }
+
+    @Test
+    public void testAddItemCantidadNegativa() {
+        Item item = new ItemImpl(product, 10.0, -3);
+        assertThrows(IncorrectItemException.class, () -> order.addItem(item));
+    }
+
+    @Test
+    public void testMismoProductoMismoPrecio() {
+        Item item1 = new ItemImpl(product, 20.0, 2);
+        Item item2 = new ItemImpl(product, 20.0, 3);
+
+        order.addItem(item1);
+        order.addItem(item2);
+
+        assertEquals(1, order.getItems().size());
+
+        Iterator<Item> it = order.getItems().iterator();
+        Item storedItem = it.next();
+
+        assertEquals(5, storedItem.getQuantity());
+    }
+
+    @Test
+    public void testMismoProductoDistintoPrecio() {
+        Item item1 = new ItemImpl(product, 20.0, 2);
+        Item item2 = new ItemImpl(product, 25.0, 1);
+
+        order.addItem(item1);
+        order.addItem(item2);
+
+        assertEquals(2, order.getItems().size());
+    }
+
+    @Test
+    public void testAddItemNulo() {
+        assertThrows(RuntimeException.class, () -> order.addItem(null));
+    }
+}
+```
+
+---
+
+## 5. Conclusión
+
+El proyecto implementa correctamente pruebas unitarias alineadas con la especificación funcional, cubriendo:
+
+* Estado inicial
+* Reglas de negocio
+* Manejo de errores
+* Casos de uso válidos y extremos
+
+El código es simple, defendible académicamente y completamente funcional.
+
+
+### Pregunta 1
+
+**Usuario:**
+
+> Vamos a realizar un proyecto de pruebas unitarias en base al documento que te voy a compartir.
+
+**Respuesta:**
+Se analizó la especificación de la clase `Order` y se propuso un proyecto de pruebas unitarias centrado en el método `addItem(Item item)`, definiendo alcance, reglas de negocio y estrategia de pruebas.
+
+---
